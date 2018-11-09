@@ -7,7 +7,7 @@ import javafx.scene.paint.Color;
 import java.util.*;
 
 /**
- * Class for building figure named tetrisGame.Tetromino from multiple Blocks.
+ * Class for building figure named Tetromino from multiple Blocks.
  */
 class Tetromino {
     private Map<Integer, Color> colors = new HashMap<Integer, Color>(){{

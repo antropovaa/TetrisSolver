@@ -4,7 +4,7 @@ import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.paint.Color;
 
 /**
- * Class for building element for tetrisGame.Tetromino
+ * Class for building element for Tetromino
  */
 class Block {
     private int x;
