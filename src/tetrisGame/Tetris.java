@@ -21,7 +21,7 @@ class Tetris {
     static int[][] mine = new int[HEIGHT + 1][WIDTH];
 
     private Tetromino currentTetromino;
-    private int time;
+    private double time;
     private List<Tetromino> tetrominos = new ArrayList<>();
     private GraphicsContext gc;
     private boolean gameOver = false;
@@ -35,21 +35,22 @@ class Tetris {
 
         root.getChildren().addAll(canvas);
 
+        Arrays.fill(mine[HEIGHT], 1);
+        createTetromino();
+
         AnimationTimer timer = new AnimationTimer() {
             @Override
             public void handle(long now) {
                 time += 0.017;
 
                 if (time >= 0.5) {
-                    move(KeyCode.DOWN);
+                    makeMove(KeyCode.DOWN);
                     repaint();
                     time = 0;
                 }
             }
         };
         timer.start();
-        Arrays.fill(mine[HEIGHT], 1);
-        createTetromino();
 
         return root;
     }
@@ -69,25 +70,6 @@ class Tetris {
         }
     }
 
-    private void move(KeyCode direction) {
-        int dx = 0;
-        int dy = 0;
-
-        switch (direction) {
-            case DOWN:
-                dy = 1;
-                break;
-            case LEFT:
-                dx = -1;
-                break;
-            case RIGHT:
-                dx = 1;
-                break;
-        }
-
-        currentTetromino.updateLocation(dx, dy);
-    }
-
     void makeMove(KeyCode direction) {
         if (!gameOver) {
             if (currentTetromino.isTouchGround()) {
@@ -95,7 +77,7 @@ class Tetris {
                 createTetromino();
             } else {
                 if (!currentTetromino.isTouchWall(direction))
-                    move(direction);
+                    currentTetromino.move(direction);
             }
             if (direction == KeyCode.UP) {
                 currentTetromino.rotate();

@@ -68,15 +68,6 @@ class Tetromino {
         }
     }
 
-    void updateLocation(int dx, int dy) {
-        for (Block block : tetromino) {
-            block.setX(block.getX() + dx);
-            block.setY(block.getY() + dy);
-        }
-        x = x + dx;
-        y = y + dy;
-    }
-
     boolean isTouchWall(KeyCode keyCode) {
         for (Block block : tetromino) {
             if (keyCode == KeyCode.LEFT && block.getX() - 1 < 0) return true;
@@ -142,5 +133,33 @@ class Tetromino {
             createFromShape();
         } else
             rotateShape(!clockwise);
+    }
+
+    void move(KeyCode direction) {
+        int dx = 0;
+        int dy = 0;
+
+        switch (direction) {
+            case DOWN:
+                dy = 1;
+                break;
+            case LEFT:
+                dx = -1;
+                break;
+            case RIGHT:
+                dx = 1;
+                break;
+        }
+
+        updateLocation(dx, dy);
+    }
+
+    private void updateLocation(int dx, int dy) {
+        for (Block block : tetromino) {
+            block.setX(block.getX() + dx);
+            block.setY(block.getY() + dy);
+        }
+        x = x + dx;
+        y = y + dy;
     }
 }
