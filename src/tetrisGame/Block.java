@@ -2,6 +2,10 @@ package tetrisGame;
 
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.paint.Color;
+import javafx.scene.shape.Rectangle;
+
+import static tetrisGame.Tetris.BLOCK_SIZE;
+import static tetrisGame.Tetris.gc;
 
 /**
  * Class for building element for Tetromino
@@ -9,6 +13,7 @@ import javafx.scene.paint.Color;
 class Block {
     private int x;
     private int y;
+    private Color color;
 
     Block(int x, int y) {
         this.x = x;
@@ -29,8 +34,12 @@ class Block {
         return y;
     }
 
-    void paint(GraphicsContext gc, Color color) {
+    void paint(Color color) {
         gc.setFill(color);
-        gc.fillRect(x * Tetris.BLOCK_SIZE + 1, y * Tetris.BLOCK_SIZE + 1, Tetris.BLOCK_SIZE - 2, Tetris.BLOCK_SIZE - 2);
+        gc.fillRect(x * BLOCK_SIZE + 1, y * BLOCK_SIZE + 1, BLOCK_SIZE - 2, BLOCK_SIZE - 2);
+    }
+
+    void erase() {
+        gc.clearRect(x * BLOCK_SIZE + 1, y * BLOCK_SIZE + 1, BLOCK_SIZE - 2, BLOCK_SIZE - 2);
     }
 }

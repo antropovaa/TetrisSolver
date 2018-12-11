@@ -2,6 +2,7 @@ package tetrisGame;
 
 import javafx.application.Application;
 import javafx.scene.Scene;
+import javafx.scene.input.KeyCode;
 import javafx.scene.paint.Color;
 import javafx.stage.Stage;
 
@@ -13,13 +14,19 @@ public class Main extends Application {
         primaryStage.setResizable(false);
 
         Tetris tetris = new Tetris();
+        Solver solver = new Solver();
         Scene scene = new Scene(tetris.createContent());
         scene.setFill(Color.BLACK);
 
         scene.setOnKeyPressed(event -> {
-            if (!tetris.isGameOver()) {
-                tetris.makeMove(event.getCode());
-                tetris.repaint();
+            if (event.getCode() == KeyCode.ENTER) {
+                solver.makeMove();
+            } else {
+                if (!tetris.isGameOver()) {
+                    tetris.erase();
+                    tetris.makeMove(event.getCode());
+                    primaryStage.setTitle("TetrisGame | SCORE: " + tetris.gameScore);
+                }
             }
         });
 
