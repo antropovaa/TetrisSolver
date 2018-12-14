@@ -5,151 +5,209 @@ import javafx.scene.Parent;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.control.Button;
-import javafx.scene.input.KeyCode;
 import javafx.scene.layout.Pane;
-import javafx.scene.paint.Color;
-import javafx.scene.shape.Line;
-
-import java.security.Key;
-import java.util.Arrays;
-
-import static tetrisGame.Tetromino.colors;
+import javafx.scene.paint.Paint;
 
 /**
  * Contains all the logic of the TetrisGame
  */
 class Tetris {
-    static final int BLOCK_SIZE = 25;
-    static final int WIDTH = 10; // in blocks
-    static final int HEIGHT = 18;
-    static int[][] mine = new int[HEIGHT + 1][WIDTH];
+    private Board board;
+    private Canvas canvas;
+    private Canvas nextCanvas;
+    private GraphicsContext context;
+    private GraphicsContext nextContext;
 
-    private Tetromino currentTetromino;
-    static double time;
-    static GraphicsContext gc;
-    private boolean gameOver = false;
-    int gameScore;
-    private final int[] SCORES = {100, 300, 700, 1500};
+    private Solver solver = new Solver(0.510066, 0.760666, 0.35663, 0.184483);
+    private Randomizer randomizer = new Randomizer();
+    private Tetromino[] workingTetrominos = {null, randomizer.nextTetromino()};
+    private Tetromino workingTetromino = null;
+    private boolean isSolverActive = false;
+    private boolean isKeyEnabled = false;
+    private double score = 0;
+    double time;
+    AnimationTimer timer;
 
     Parent createContent() {
         Pane root = new Pane();
-        root.setPrefSize(BLOCK_SIZE * WIDTH + 100, BLOCK_SIZE * HEIGHT);
+        root.setPrefSize(350, 400);
         root.setStyle("-fx-background-color: black;");
 
-        Canvas canvas = new Canvas(BLOCK_SIZE * WIDTH, BLOCK_SIZE * HEIGHT);
-        gc = canvas.getGraphicsContext2D();
+        canvas = new Canvas(200, 400);
+        context = canvas.getGraphicsContext2D();
 
-        Line line = new Line(BLOCK_SIZE * WIDTH + 1, 0, BLOCK_SIZE * WIDTH + 2, BLOCK_SIZE * HEIGHT);
-        line.setFill(Color.WHITE);
+        nextCanvas = new Canvas(130, 100);
+        nextCanvas.setLayoutX(210);
+        nextCanvas.setLayoutY(10);
+        nextContext = canvas.getGraphicsContext2D();
 
-        Button player = new Button("Player");
-        player.setLayoutX(BLOCK_SIZE * WIDTH + 10);
-        player.setLayoutY(BLOCK_SIZE * HEIGHT / 2.0 - 50);
+        Button solverButton = new Button("Solve");
+        solverButton.setPrefSize(130, 40);
+        solverButton.setLayoutX(210);
+        solverButton.setLayoutY(155);
 
-        Button solver = new Button("Solver");
-        solver.setLayoutX(BLOCK_SIZE * WIDTH + 10);
-        solver.setLayoutY(BLOCK_SIZE * HEIGHT / 2.0);
+        solverButton.setOnAction(e -> {
+            if (isSolverActive) {
+                isSolverActive = false;
+            } else {
+                isSolverActive = true;
+                isKeyEnabled = false;
+                timer.stop();
+                startWorkingPieceDropAnimation();
+            }
+        });
 
-        player.setOnAction(e -> {
-            createTetromino();
-            AnimationTimer timer = new AnimationTimer() {
-                @Override
-                public void handle(long now) {
-                    time += 0.017;
+        Button resetButton = new Button("Reset");
+        resetButton.setPrefSize(130, 40);
+        resetButton.setLayoutX(210);
+        resetButton.setLayoutY(205);
 
-                    if (time >= 0.5) {
-                        makeMove(KeyCode.DOWN);
+        resetButton.setOnAction(e -> {
+            timer.stop();
+            clearBoard();
+            board = new Board(22, 10);
+            randomizer = new Randomizer();
+            workingTetrominos = new Tetromino[]{null, randomizer.nextTetromino()};
+            workingTetromino = null;
+            score = 0;
+            isKeyEnabled = true;
+            isSolverActive = false;
+            startTurn();
+        });
+
+        root.setOnKeyPressed(e -> {
+            if (!isKeyEnabled)
+                return;
+            switch (e.getCode()) {
+                case DOWN:
+                    if (workingTetromino.canMoveDown(board)) {
+                        workingTetromino.moveDown();
+                        repaintCanvas();
+                    }
+                    break;
+                case LEFT:
+                    if (workingTetromino.canMoveLeft(board)) {
+                        workingTetromino.moveLeft();
+                        repaintCanvas();
+                    }
+                    break;
+                case RIGHT:
+                    if (workingTetromino.canMoveRight(board)) {
+                        workingTetromino.moveRight();
+                        repaintCanvas();
+                    }
+                    break;
+                case UP:
+                    workingTetromino.rotate(board);
+                    repaintCanvas();
+                    break;
+            }
+        });
+
+        timer = new AnimationTimer() {
+            @Override
+            public void handle(long now) {
+                while (workingTetromino.canMoveDown(board)) {
+                    time += 250;
+                    if (time >= 750000000) {
+                        workingTetromino.moveDown();
+                        repaintCanvas();
                         time = 0;
                     }
                 }
-            };
-            timer.start();
-        });
-
-        solver.setOnAction(e -> {
-            Solver solve = new Solver();
-            AnimationTimer timer = new AnimationTimer() {
-                @Override
-                public void handle(long now) {
-                    time += 2;
-                    if (time >= 16) {
-                        solve.makeMove();
-                        time = 0;
-                    }
+                if (!endTurn()) {
+                    return;
                 }
-            };
-            timer.start();
-        });
+                startTurn();
+            }
+        };
 
-        root.getChildren().addAll(canvas, line, player, solver);
-        Arrays.fill(mine[HEIGHT], 1);
+        board = new Board(22, 10);
+        startTurn();
+
+        root.getChildren().addAll(canvas, nextCanvas, solverButton, resetButton);
 
         return root;
     }
 
-    boolean isGameOver() {
-        return gameOver;
+    private String intToRGB(int value) {
+        return "rgb(" + ((value >> 16) & 0xFF) + "," + ((value >> 8) & 0xFF) + "," + (value & 0xFF) + ")";
     }
 
-    void createTetromino() {
-        if (!gameOver) {
-            currentTetromino = new Tetromino();
-            gameOver = currentTetromino.isTouchGround();
-            if (!gameOver)
-                currentTetromino.paint();
-        }
-    }
+    private void repaintCanvas() {
+        context.save();
+        context.clearRect(0, 0, canvas.getWidth(), canvas.getHeight());
 
-    void makeMove(KeyCode direction) {
-        if (!gameOver) {
-            clearRows();
-            if (currentTetromino.isTouchGround()) {
-                currentTetromino.leaveOnTheGround();
-                createTetromino();
-            } else {
-                if (!currentTetromino.isTouchWall(direction))
-                    currentTetromino.move(direction);
-            }
-            if (direction == KeyCode.UP) {
-                currentTetromino.rotate();
-            }
-        }
-    }
-
-    void repaintMine(int row){
-        for (int i = row; i > 0; i--) {
-            for (int j = 0; j < WIDTH; j++) {
-                gc.setFill(colors.get(mine[i][j]));
-                gc.fillRect(j * BLOCK_SIZE + 1, i * BLOCK_SIZE + 1, BLOCK_SIZE - 2, BLOCK_SIZE - 2);
-            }
-        }
-    }
-
-    void erase() {
-        currentTetromino.erase();
-    }
-
-    void clearRows() {
-        int clearRows = 0;
-        int filled = 1;
-        int currentRow = HEIGHT - 1;
-        while (currentRow > 0) {
-            for (int column = 0; column < WIDTH; column++) {
-                filled = mine[currentRow][column] * filled;
-                if (filled < 0) break;
-            }
-            if (filled > 0) {
-                clearRows++;
-                for (int i = currentRow; i > 0; i--) {
-                    System.arraycopy(mine[i - 1], 0, mine[i], 0, WIDTH);
-                    repaintMine(i);
+        for (int r = 2; r < board.rows; r++) {
+            for (int c = 0; c < board.columns; c++) {
+                if (board.cells[r][c] != 0) {
+                    context.setFill(Paint.valueOf(intToRGB(board.cells[r][c])));
+                    context.fillRect(20 * (c),
+                            20 * ((r) - 2), 20, 20);
+                    context.setFill(Paint.valueOf(intToRGB(0xFFFFFF)));
+                    context.strokeRect(20 * (c),
+                            20 * ((r) - 2), 20, 20);
                 }
-            } else
-                currentRow--;
-            filled = 1;
+            }
         }
-        if (clearRows > 0) {
-            gameScore += SCORES[clearRows - 1];
+        context.restore();
+    }
+
+    private void repaintNextCanvas() {
+        nextContext.save();
+        nextContext.clearRect(0, 0, nextCanvas.getWidth(), nextCanvas.getHeight());
+        Tetromino next = workingTetrominos[1];
+
+        int xOffSet = next.size == 2 ? 20 : next.size == 3 ? 10 : next.size == 4 ? 0 : null;
+        int yOffSet = next.size == 2 ? 20 : next.size == 3 ? 20 : next.size == 4 ? 10 : null;
+        for (int r = 0; r < next.size; r++) {
+            for (int c = 0; c < next.size; c++) {
+                if (next.cells[r][c] != 0) {
+                    nextContext.setFill(Paint.valueOf(intToRGB(next.cells[r][c])));
+                    nextContext.fillRect( xOffSet + 20 * c, yOffSet + 20 * r, 20, 20);
+                    nextContext.setFill(Paint.valueOf(intToRGB(0xFFFFFF)));
+                    nextContext.strokeRect(xOffSet + 20 * c, yOffSet + 20 * r, 20, 20);
+                }
+            }
         }
+        nextContext.restore();
+    }
+
+    private void startTurn() {
+        // смена фигурок
+        for (int i = 0; i < workingTetrominos.length - 1; i++) {
+            workingTetrominos[i] = workingTetrominos[i + 1];
+        }
+        workingTetrominos[workingTetrominos.length - 1] = randomizer.nextTetromino();
+        workingTetromino = workingTetrominos[0];
+
+        repaintCanvas();
+        repaintNextCanvas();
+
+        if (isSolverActive) {
+            isKeyEnabled = false;
+            workingTetromino = solver.best(board, workingTetrominos);
+            startWorkingPieceDropAnimation();
+        } else {
+            isKeyEnabled = true;
+        }
+    }
+
+    private void startWorkingPieceDropAnimation() {
+        time = 0;
+        timer.start();
+    }
+
+    private boolean endTurn() {
+        board.addTetromino(workingTetromino);
+        score += board.clearLines();
+        repaintCanvas();
+        repaintNextCanvas();
+
+        return !board.isFull();
+    }
+
+    private void clearBoard() {
+        context.clearRect(0, 0, canvas.getWidth(), canvas.getHeight());
     }
 }

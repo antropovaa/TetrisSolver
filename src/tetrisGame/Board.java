@@ -46,7 +46,7 @@ public class Board {
         return distance;
     }
 
-    boolean isLine(int row) {
+    private boolean isLine(int row) {
         for (int c = 0; c < this.columns; c++) {
             if (this.cells[row][c] == 0) {
                 return false;
@@ -55,7 +55,7 @@ public class Board {
         return true;
     }
 
-    boolean isEmptyRow(int row) {
+    private boolean isEmptyRow(int row) {
         for (int c = 0; c < this.columns; c++) {
             if (this.cells[row][c] != 0)
                 return false;
@@ -65,13 +65,6 @@ public class Board {
 
     boolean isFull() {
         return !this.isEmptyRow(0) || !this.isEmptyRow(1);
-    }
-
-    int gridHeight() {
-        int r = 0;
-        while (r < this.rows && this.isEmptyRow(r))
-            r++;
-        return this.rows - r;
     }
 
     int fullLines() {
@@ -99,22 +92,7 @@ public class Board {
         return count;
     }
 
-    int blockades() {
-        int count = 0;
-        for (int c = 0; c < this.columns; c++) {
-            boolean isThereWereHole = false;
-            for (int r = this.rows - 1; r >= 0; r--) {
-                if (this.cells[r][c] == 0) {
-                    isThereWereHole = true;
-                } else if (this.cells[r][c] != 0 && isThereWereHole) {
-                    count++;
-                }
-            }
-        }
-        return count;
-    }
-
-    int columnHeight(int column) {
+    private int columnHeight(int column) {
         int r = 0;
         while (r < this.rows && this.cells[r][column] == 0) {
             r++;
@@ -138,7 +116,7 @@ public class Board {
         return total;
     }
 
-    void addPiece(Tetromino tetromino) {
+    void addTetromino(Tetromino tetromino) {
         for (int r = 0; r < tetromino.cells.length; r++) {
             for (int c = 0; c < tetromino.cells[r].length; c++) {
                 int _r = tetromino.row + r;

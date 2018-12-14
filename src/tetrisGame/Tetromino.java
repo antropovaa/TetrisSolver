@@ -1,254 +1,258 @@
 package tetrisGame;
 
-import javafx.scene.canvas.GraphicsContext;
-import javafx.scene.input.KeyCode;
-import javafx.scene.paint.Color;
-
-import java.util.*;
-
-import static tetrisGame.Tetris.*;
+import javafx.util.Pair;
 
 /**
  * Class for building figure named Tetromino from multiple Blocks.
  */
 class Tetromino {
-    static Map<Integer, Color> colors = new HashMap<Integer, Color>(){{
-        put(0, Color.BLACK);
-        put(1, Color.BLUE);
-        put(2, Color.YELLOW);
-        put(3, Color.ORANGE);
-        put(4, Color.DARKBLUE);
-        put(5, Color.GREEN);
-        put(6, Color.MAGENTA);
-        put(7, Color.RED);
-    }};
+    int[][] cells;
+    int size;
+    int row;
+    int column;
 
-    private final int [][][] shapes = {
-            {{0,0,0,0}, {1,1,1,1}, {0,0,0,0}, {0,0,0,0}, {4, 1}}, // I
-            {{1,1}, {1,1}, {2, 2}}, // O
-            {{1,0,0}, {1,1,1}, {0,0,0}, {3, 3}}, // J
-            {{0,0,1}, {1,1,1}, {0,0,0}, {3, 4}}, // L
-            {{0,1,1}, {1,1,0}, {0,0,0}, {3, 5}}, // S
-            {{1,1,1}, {0,1,0}, {0,0,0}, {3, 6}}, // T
-            {{1,1,0}, {0,1,1}, {0,0,0}, {3, 7}} // Z
-        };
+    private Tetromino(int[][] cells) {
+        this.cells = cells;
+        this.size = this.cells.length;
+        this.row = 0;
+        this.column = 0;
+    }
 
-    private List<Block> tetromino = new ArrayList<>();
-    private int[][] shape = new int[Tetris.WIDTH][Tetris.HEIGHT];
-    private int type, size, keyColor;
-    private Color color;
-    private String figure;
-    private int x;
-    private int y;
-    private Random random = new Random();
-    private boolean clockwise = true;
-
-    Tetromino() {
-        type = random.nextInt(shapes.length);
-        size = shapes[type][shapes[type].length - 1][0];
-        keyColor = shapes[type][shapes[type].length - 1][1];
-
-        color = colors.get(keyColor);
-
-        switch(type) {
-            case 0:
-                figure = "I";
+    static Tetromino fromIndex(int index) {
+        Tetromino tetromino = null;
+        switch (index) {
+            case 0:// O
+                int[][] cells0 = {
+                        {0xFFFF00, 0xFFFF00},
+                        {0xFFFF00, 0xFFFF00}
+                };
+                tetromino = new Tetromino(cells0);
                 break;
-            case 1:
-                figure = "O";
+            case 1: // J
+                int[][] cells1 = {
+                        {0x0000ff, 0x000000, 0x000000},
+                        {0x0000ff, 0x0000ff, 0x0000ff},
+                        {0x000000, 0x000000, 0x000000}
+                };
+                tetromino = new Tetromino(cells1);
                 break;
+            case 2: // L
+                int[][] cells2 = {
+                        {0x000000, 0x000000, 0xFF9933},
+                        {0xFF9933, 0xFF9933, 0xFF9933},
+                        {0x000000, 0x000000, 0x000000}
+                };
+                tetromino = new Tetromino(cells2);
+                break;
+            case 3: // Z
+                int[][] cells3 = {
+                        {0xFF0000, 0xFF0000, 0x000000},
+                        {0x000000, 0xFF0000, 0xFF0000},
+                        {0x000000, 0x000000, 0x000000}
+                };
+                tetromino = new Tetromino(cells3);
+                break;
+            case 4: // S
+                int[][] cells4 = {
+                        {0x000000, 0x00FF00, 0x00FF00},
+                        {0x00FF00, 0x00FF00, 0x00000},
+                        {0x000000, 0x000000, 0x000000}
+                };
+                tetromino = new Tetromino(cells4);
+                break;
+            case 5: // T
+                int[][] cells5 = {
+                        {0x000000, 0xFF00FF, 0x000000},
+                        {0xFF00FF, 0xFF00FF, 0xFF00FF},
+                        {0x000000, 0x000000, 0x000000}
+                };
+                tetromino = new Tetromino(cells5);
+                break;
+            case 6: // I
+                int[][] cells6 = {
+                        {0x000000, 0x000000, 0x000000, 0x000000},
+                        {0x00ffff, 0x00ffff, 0x00ffff, 0x00ffff},
+                        {0x000000, 0x000000, 0x000000, 0x000000},
+                        {0x000000, 0x000000, 0x000000, 0x000000}
+                };
+                tetromino = new Tetromino(cells6);
+                break;
+        }
+        if (tetromino != null) {
+            tetromino.row = 0;
+            tetromino.column = (int) Math.floor((10 - tetromino.size) / 2.0); // выравнивание по центру
+        }
+        return tetromino;
+    }
+
+    protected Tetromino clone() {
+        int[][] cells = new int[this.size][this.size];
+        for (int r = 0; r < this.size; r++) {
+            System.arraycopy(this.cells[r], 0, cells[r], 0, this.size);
+        }
+
+        Tetromino piece = new Tetromino(cells);
+        piece.row = this.row;
+        piece.column = this.column;
+        return piece;
+    }
+
+    boolean canMoveLeft(Board board) {
+        for (int r = 0; r < this.cells.length; r++) {
+            for (int c = 0; c < this.cells[r].length; c++) {
+                int _r = this.row + r;
+                int _c = this.column + c - 1;
+                if (this.cells[r][c] != 0) {
+                    if (!(_c >= 0 && board.cells[_r][_c] == 0)) {
+                        return false;
+                    }
+                }
+            }
+        }
+        return true;
+    }
+
+    boolean canMoveRight(Board board) {
+        for (int r = 0; r < this.cells.length; r++) {
+            for (int c = 0; c < this.cells[r].length; c++) {
+                int _r = this.row + r;
+                int _c = this.column + c + 1;
+                if (this.cells[r][c] != 0) {
+                    if (!(_c >= 0 && board.cells[_r][_c] == 0)) {
+                        return false;
+                    }
+                }
+            }
+        }
+        return true;
+    }
+
+    boolean canMoveDown(Board board) {
+        for (int r = 0; r < this.cells.length; r++) {
+            for (int c = 0; c < this.cells[r].length; c++) {
+                int _r = this.row + r + 1;
+                int _c = this.column + c;
+                if (this.cells[r][c] != 0) {
+                    if (!(_r < board.rows && board.cells[_r][_c] == 0)) {
+                        return false;
+                    }
+                }
+            }
+        }
+        return true;
+    }
+
+    void moveLeft() {
+        this.column--;
+    }
+
+    void moveRight() {
+        this.column++;
+    }
+
+    void moveDown() {
+        this.row++;
+    }
+
+    private void rotateCells() {
+        int[][] _cells = new int[this.size][this.size];
+
+        switch (this.size) {
             case 2:
-                figure = "J";
+                _cells[0][0] = this.cells[1][0];
+                _cells[0][1] = this.cells[0][0];
+                _cells[1][0] = this.cells[1][1];
+                _cells[1][1] = this.cells[0][1];
                 break;
             case 3:
-                figure = "L";
+                _cells[0][0] = this.cells[2][0];
+                _cells[0][1] = this.cells[1][0];
+                _cells[0][2] = this.cells[0][0];
+                _cells[1][0] = this.cells[2][1];
+                _cells[1][1] = this.cells[1][1];
+                _cells[1][2] = this.cells[0][1];
+                _cells[2][0] = this.cells[2][2];
+                _cells[2][1] = this.cells[1][2];
+                _cells[2][2] = this.cells[0][2];
                 break;
             case 4:
-                figure = "S";
-                break;
-            case 5:
-                figure = "T";
-                break;
-            case 6:
-                figure = "Z";
+                _cells[0][0] = this.cells[3][0];
+                _cells[0][1] = this.cells[2][0];
+                _cells[0][2] = this.cells[1][0];
+                _cells[0][3] = this.cells[0][0];
+                _cells[1][3] = this.cells[0][1];
+                _cells[2][3] = this.cells[0][2];
+                _cells[3][3] = this.cells[0][3];
+                _cells[3][2] = this.cells[1][3];
+                _cells[3][1] = this.cells[2][3];
+                _cells[3][0] = this.cells[3][3];
+                _cells[2][0] = this.cells[3][2];
+                _cells[1][0] = this.cells[3][1];
+
+                _cells[1][1] = this.cells[2][1];
+                _cells[1][2] = this.cells[1][1];
+                _cells[2][2] = this.cells[1][2];
+                _cells[2][1] = this.cells[2][2];
                 break;
         }
 
-        x = 3;
-        y = 0;
-        for (int i = 0; i < size; i++) {
-            System.arraycopy(shapes[type][i], 0, shape[i], 0, shapes[type][i].length);
+        this.cells = _cells;
+    }
+
+    // метод для "коррекции" положения фигурки, которая могла выйти за пределы доски после поворота
+    private Pair<Integer, Integer> computeRotateOffset(Board board) {
+        Tetromino current = this.clone();
+        current.rotateCells();
+
+        if (board.valid(current)) {
+            return new Pair<>(current.row - this.row, current.column - this.column);
         }
-        createFromShape();
-    }
 
+        // если вышла за пределы доски
+        int initialRow = current.row;
+        int initialCol = current.column;
 
-
-    void setLocation(int x, int y) {
-        updateLocation(x - this.x, y - this.y);
-    }
-
-    int getHeight() {
-        if (keyColor == 1)
-            return 1;
-        else if (keyColor > 1 && keyColor < 8)
-            return 2;
-        else
-            return 0;
-    }
-
-    int getWidth() {
-        Set<Integer> fulledColumns = new HashSet<>();
-        for (int i = 0; i < size; i++) {
-            for (int j = 0; j < size; j++) {
-                if (shape[j][i] == 1)
-                    fulledColumns.add(i);
+        for (int i = 0; i < current.size - 1; i++) {
+            current.column = initialCol + i;
+            if (board.valid(current)) {
+                return new Pair<>(current.row - this.row, current.column - this.column);
             }
-        }
-        return fulledColumns.size();
-    }
 
-    private void createFromShape() {
-        tetromino.clear();
-        for (int x = 0; x < size; x++) {
-            for (int y = 0; y < size; y++) {
-                Block block = new Block(x + this.x, y + this.y);
-                if (shape[y][x] == 1)
-                    tetromino.add(block);
+            for (int j = 0; j < current.size - 1; j++) {
+                current.row = initialRow - j;
+                if (board.valid(current)) {
+                    return new Pair<>(current.row - this.row, current.column - this.column);
+                }
             }
+            current.row = initialRow;
         }
-    }
+        current.column = initialCol;
 
-    void paint() {
-        for (Block block : tetromino) {
-            block.paint(color);
-        }
-    }
+        for (int i = 0; i < current.size - 1; i++) {
+            current.column = initialCol - i;
+            if (board.valid(current)) {
+                return new Pair<>(current.row - this.row, current.column - this.column);
+            }
 
-    void erase() {
-        for (Block block : tetromino) {
-            block.paint(Color.BLACK);
-        }
-    }
-
-    boolean isTouchWall(KeyCode keyCode) {
-        for (Block block : tetromino) {
-            if (keyCode == KeyCode.LEFT &&
-                    (block.getX() - 1 < 0 || mine[block.getY()][block.getX() - 1] > 0)) return true;
-            if (keyCode == KeyCode.RIGHT &&
-                    (block.getX() + 1 > Tetris.WIDTH - 1 || mine[block.getY()][block.getX() + 1] > 0)) return true;
-        }
-        return false;
-    }
-
-    boolean isTouchGround() {
-        for (Block block : tetromino) {
-            if (mine[block.getY() + 1][block.getX()] > 0)
-                return true;
-        }
-        return false;
-    }
-
-//    boolean isCrossGround() {
-//        for (Block block : tetromino)
-//            if (block.getY() > HEIGHT - 1) return true;
-//        return false;
-//    }
-
-    void leaveOnTheGround() {
-        for (Block block : tetromino) {
-            mine[block.getY()][block.getX()] = keyColor;
-            block.paint(colors.get(keyColor));
-        }
-    }
-
-    void drop() {
-        for (Block block : tetromino) {
-            mine[block.getY()][block.getX()] = keyColor;
-        }
-    }
-
-    void clearFromMine() {
-        for (Block block : tetromino) {
-            mine[block.getY()][block.getX()] = 0;
-        }
-    }
-
-    boolean isWrongPosition() {
-        for (int x = 0; x < size; x++)
-            for (int y = 0; y < size; y++)
-                if (shape[y][x] == 1) {
-                    if (y + this.y < 0) return true;
-                    if (y + this.y > HEIGHT - 1) return true;
-                    if (x + this.x < 0 || x + this.x > WIDTH - 1) return true;
-                    if (mine[y + this.y][x + this.x] > 0) return true;
+            for (int j = 0; j < current.size - 1; j++) {
+                current.row = initialRow - j;
+                if (board.valid(current)) {
+                    return new Pair<>(current.row - this.row, current.column - this.column);
                 }
-        return false;
+            }
+            current.row = initialRow;
+        }
+        current.column = initialCol;
+
+        return null;
     }
 
-    private void rotateShape(boolean clockwise) {
-        int[][] newShape = new int[size][size];
-        for (int i = 0; i < size; i++) {
-            for (int j = 0; j < size; j++)
-                if (clockwise) {
-//                        Block block = getBlock(x + j, y + i);
-//                        block.erase();
-//                        tetromino.remove(block);
-                        newShape[j][size - 1 - i] = shape[i][j];
-//                        Block newBlock = new Block(x + size - 1 - i, y + j);
-//                        newBlock.paint(color);
-                } else {
-                    newShape[size - 1 - j][i] = shape[i][j];
-                }
+    void rotate(Board board) {
+        Pair<Integer, Integer> offset = this.computeRotateOffset(board);
+        if (offset != null) {
+            this.rotateCells();
+            this.row += offset.getKey();
+            this.column += offset.getValue();
         }
-        shape = newShape;
-    }
-
-//    Block getBlock(int x, int y) {
-//        Block result = null;
-//        for (Block block : tetromino) {
-//            if (block.getX() == x && block.getY() == y) {
-//                result = block;
-//            }
-//        }
-//        return result;
-//    }
-
-    void rotate() {
-        rotateShape(clockwise);
-        if (!isWrongPosition()) {
-            erase();
-            createFromShape();
-        } else {
-            rotateShape(!clockwise);
-        }
-    }
-
-    void move(KeyCode direction) {
-        erase();
-        int dx = 0;
-        int dy = 0;
-        switch (direction) {
-            case DOWN:
-                dy = 1;
-                break;
-            case LEFT:
-                dx = -1;
-                break;
-            case RIGHT:
-                dx = 1;
-                break;
-        }
-        updateLocation(dx, dy);
-        paint();
-    }
-
-    private void updateLocation(int dx, int dy) {
-        for (Block block : tetromino) {
-            block.setX(block.getX() + dx);
-            block.setY(block.getY() + dy);
-        }
-        x = x + dx;
-        y = y + dy;
     }
 }
