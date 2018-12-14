@@ -102,7 +102,7 @@ public class Board {
 
     int summaryHeight() {
         int total = 0;
-        for (int c = 0; c < this.columns - 1; c++) {
+        for (int c = 0; c < this.columns; c++) {
             total += this.columnHeight(c);
         }
         return total;

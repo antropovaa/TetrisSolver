@@ -108,7 +108,7 @@ class Tetris {
             @Override
             public void handle(long now) {
                 while (workingTetromino.canMoveDown(board)) {
-                    time += 250;
+                    time += 500;
                     if (time >= 750000000) {
                         workingTetromino.moveDown();
                         repaintCanvas();
