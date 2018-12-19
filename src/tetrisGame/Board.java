@@ -27,9 +27,9 @@ public class Board {
         return board;
     }
 
-    int clearLines() {
+    void clearLines() {
         int distance = 0;
-        int[] row = new int[this.columns];
+        //int[] row = new int[this.columns];
         for (int r = this.rows - 1; r >= 0; r--) {
             if (this.isLine(r)) {
                 distance++;
@@ -43,7 +43,6 @@ public class Board {
                 }
             }
         }
-        return distance;
     }
 
     private boolean isLine(int row) {

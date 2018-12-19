@@ -2,9 +2,26 @@ package tetrisGame;
 
 import javafx.util.Pair;
 
-/**
- * Class for building figure named Tetromino from multiple Blocks.
- */
+enum Figure {
+    O(0),
+    J(1),
+    L(2),
+    Z(3),
+    S(4),
+    T(5),
+    I(6);
+
+    private int index;
+
+    Figure(int index) {
+        this.index = index;
+    }
+
+    int getIndex() {
+        return index;
+    }
+}
+
 class Tetromino {
     int[][] cells;
     int size;
@@ -18,70 +35,81 @@ class Tetromino {
         this.column = 0;
     }
 
+    private static Figure getFigure(int index) {
+        Figure result = null;
+        for (Figure f : Figure.values()) {
+            if (index == f.getIndex()) {
+                result = f;
+            }
+        }
+        return result;
+    }
+
     static Tetromino fromIndex(int index) {
         Tetromino tetromino = null;
-        switch (index) {
-            case 0:// O
+
+        switch (getFigure(index)) {
+            case O:
                 int[][] cells0 = {
-                        {0xFFFF00, 0xFFFF00},
-                        {0xFFFF00, 0xFFFF00}
+                        {0xdee02c, 0xdee02c},
+                        {0xdee02c, 0xdee02c}
                 };
                 tetromino = new Tetromino(cells0);
                 break;
-            case 1: // J
+            case J:
                 int[][] cells1 = {
-                        {0x0000ff, 0x000000, 0x000000},
-                        {0x0000ff, 0x0000ff, 0x0000ff},
+                        {0x609ee3, 0x000000, 0x000000},
+                        {0x609ee3, 0x609ee3, 0x609ee3},
                         {0x000000, 0x000000, 0x000000}
                 };
                 tetromino = new Tetromino(cells1);
                 break;
-            case 2: // L
+            case L:
                 int[][] cells2 = {
-                        {0x000000, 0x000000, 0xFF9933},
-                        {0xFF9933, 0xFF9933, 0xFF9933},
+                        {0x000000, 0x000000, 0xf3b03a},
+                        {0xf3b03a, 0xf3b03a, 0xf3b03a},
                         {0x000000, 0x000000, 0x000000}
                 };
                 tetromino = new Tetromino(cells2);
                 break;
-            case 3: // Z
+            case Z:
                 int[][] cells3 = {
-                        {0xFF0000, 0xFF0000, 0x000000},
-                        {0x000000, 0xFF0000, 0xFF0000},
+                        {0xf33a3a, 0xf33a3a, 0x000000},
+                        {0x000000, 0xf33a3a, 0xf33a3a},
                         {0x000000, 0x000000, 0x000000}
                 };
                 tetromino = new Tetromino(cells3);
                 break;
-            case 4: // S
+            case S:
                 int[][] cells4 = {
-                        {0x000000, 0x00FF00, 0x00FF00},
-                        {0x00FF00, 0x00FF00, 0x00000},
+                        {0x000000, 0x56ce30, 0x56ce30},
+                        {0x56ce30, 0x56ce30, 0x00000},
                         {0x000000, 0x000000, 0x000000}
                 };
                 tetromino = new Tetromino(cells4);
                 break;
-            case 5: // T
+            case T:
                 int[][] cells5 = {
-                        {0x000000, 0xFF00FF, 0x000000},
-                        {0xFF00FF, 0xFF00FF, 0xFF00FF},
+                        {0x000000, 0xe360b0, 0x000000},
+                        {0xe360b0, 0xe360b0, 0xe360b0},
                         {0x000000, 0x000000, 0x000000}
                 };
                 tetromino = new Tetromino(cells5);
                 break;
-            case 6: // I
+            case I:
                 int[][] cells6 = {
                         {0x000000, 0x000000, 0x000000, 0x000000},
-                        {0x00ffff, 0x00ffff, 0x00ffff, 0x00ffff},
+                        {0x3ecfcd, 0x3ecfcd, 0x3ecfcd, 0x3ecfcd},
                         {0x000000, 0x000000, 0x000000, 0x000000},
                         {0x000000, 0x000000, 0x000000, 0x000000}
                 };
                 tetromino = new Tetromino(cells6);
                 break;
         }
-        if (tetromino != null) {
-            tetromino.row = 0;
-            tetromino.column = (int) Math.floor((10 - tetromino.size) / 2.0); // выравнивание по центру
-        }
+
+        tetromino.row = 0;
+        tetromino.column = (int) Math.floor((10 - tetromino.size) / 2.0); // выравнивание по центру
+
         return tetromino;
     }
 
@@ -157,6 +185,15 @@ class Tetromino {
     private void rotateCells() {
         int[][] _cells = new int[this.size][this.size];
 
+//        for (int i = 0; i < this.size / 2; i++) {
+//            for (int j = i; j < this.size - 1 - i; j++) {
+//                _cells[i][j] = this.cells[this.size - 1 - j][i];
+//                _cells[j][this.size - 1 - i] = this.cells[i][j];
+//                _cells[this.size - 1 - j][i] = this.cells[this.size - 1 - i][this.size - 1 - j];
+//                _cells[this.size - 1 - i][this.size - 1 - j] = this.cells[j][this.size - 1 - i];
+//            }
+//        }
+
         switch (this.size) {
             case 2:
                 _cells[0][0] = this.cells[1][0];
@@ -188,7 +225,6 @@ class Tetromino {
                 _cells[3][0] = this.cells[3][3];
                 _cells[2][0] = this.cells[3][2];
                 _cells[1][0] = this.cells[3][1];
-
                 _cells[1][1] = this.cells[2][1];
                 _cells[1][2] = this.cells[1][1];
                 _cells[2][2] = this.cells[1][2];

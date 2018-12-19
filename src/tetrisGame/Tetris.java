@@ -6,11 +6,11 @@ import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.control.Button;
 import javafx.scene.layout.Pane;
+import javafx.scene.paint.Color;
 import javafx.scene.paint.Paint;
+import javafx.scene.shape.Rectangle;
+import javafx.scene.text.Text;
 
-/**
- * Contains all the logic of the TetrisGame
- */
 class Tetris {
     private Board board;
     private Canvas canvas;
@@ -20,93 +20,104 @@ class Tetris {
 
     private Solver solver = new Solver(0.510066, 0.760666, 0.35663, 0.184483);
     private Randomizer randomizer = new Randomizer();
-    private Tetromino[] workingTetrominos = {null, randomizer.nextTetromino()};
-    private Tetromino workingTetromino = null;
+    private Tetromino[] workingTetrominos;
+    private Tetromino workingTetromino;
     private boolean isSolverActive = false;
-    private boolean isKeyEnabled = false;
-    private double score = 0;
-    double time;
-    AnimationTimer timer;
+    private double time;
+    private AnimationTimer timer;
+
+    Tetris(int numberOfNextTetromino) {
+        workingTetrominos = new Tetromino[numberOfNextTetromino];
+
+        if (numberOfNextTetromino > 0) {
+            workingTetrominos[0] = null;
+
+            for (int i = 1; i < workingTetrominos.length; i++) {
+                workingTetrominos[i] = randomizer.nextTetromino();
+            }
+        }
+
+        workingTetromino = null;
+    }
 
     Parent createContent() {
         Pane root = new Pane();
         root.setPrefSize(350, 400);
-        root.setStyle("-fx-background-color: black;");
+        root.setStyle("-fx-background-color: #e2eff0;");
+
+        Pane settingsPane = new Pane();
+        settingsPane.setLayoutX(200);
+        settingsPane.setLayoutY(0);
+        settingsPane.setPrefSize(150, 400);
+        settingsPane.setStyle("-fx-background-color: white");
 
         canvas = new Canvas(200, 400);
         context = canvas.getGraphicsContext2D();
 
         nextCanvas = new Canvas(130, 100);
-        nextCanvas.setLayoutX(210);
+        nextCanvas.setLayoutX(240);
         nextCanvas.setLayoutY(10);
-        nextContext = canvas.getGraphicsContext2D();
+        nextContext = nextCanvas.getGraphicsContext2D();
 
         Button solverButton = new Button("Solve");
         solverButton.setPrefSize(130, 40);
         solverButton.setLayoutX(210);
         solverButton.setLayoutY(155);
 
-        solverButton.setOnAction(e -> {
-            if (isSolverActive) {
-                isSolverActive = false;
-            } else {
+        Rectangle solveButton = new Rectangle(130, 40, Color.web("#999999"));
+        solveButton.setLayoutX(210);
+        solveButton.setLayoutY(155);
+
+        Text solve = new Text(250, 180, "Solve");
+        solve.setFill(Color.BLACK);
+        solve.setStyle("-fx-font: 18 tahoma");
+        solve.setOnMouseEntered(e -> solve.setFill(Color.WHITE));
+        solve.setOnMouseExited(e -> solve.setFill(Color.BLACK));
+
+        solveButton.setOnMouseClicked(e -> {
+            if (!isSolverActive) {
+                solveButton.setFill(Color.web("#cc9999"));
                 isSolverActive = true;
-                isKeyEnabled = false;
                 timer.stop();
                 startWorkingPieceDropAnimation();
             }
         });
 
-        Button resetButton = new Button("Reset");
-        resetButton.setPrefSize(130, 40);
+        Rectangle resetButton = new Rectangle(130, 40,Color.web("#999999"));
         resetButton.setLayoutX(210);
         resetButton.setLayoutY(205);
 
-        resetButton.setOnAction(e -> {
+        Text reset = new Text(253, 230, "Reset");
+        reset.setFill(Color.BLACK);
+        reset.setStyle("-fx-font: 18 tahoma");
+        reset.setOnMouseEntered(e -> reset.setFill(Color.WHITE));
+        reset.setOnMouseExited(e -> reset.setFill(Color.BLACK));
+
+        resetButton.setOnMouseClicked(e -> {
             timer.stop();
             clearBoard();
             board = new Board(22, 10);
             randomizer = new Randomizer();
             workingTetrominos = new Tetromino[]{null, randomizer.nextTetromino()};
             workingTetromino = null;
-            score = 0;
-            isKeyEnabled = true;
             isSolverActive = false;
+            solveButton.setFill(Color.web("#999999"));
             startTurn();
-        });
-
-        root.setOnKeyPressed(e -> {
-            if (!isKeyEnabled)
-                return;
-            switch (e.getCode()) {
-                case DOWN:
-                    if (workingTetromino.canMoveDown(board)) {
-                        workingTetromino.moveDown();
-                        repaintCanvas();
-                    }
-                    break;
-                case LEFT:
-                    if (workingTetromino.canMoveLeft(board)) {
-                        workingTetromino.moveLeft();
-                        repaintCanvas();
-                    }
-                    break;
-                case RIGHT:
-                    if (workingTetromino.canMoveRight(board)) {
-                        workingTetromino.moveRight();
-                        repaintCanvas();
-                    }
-                    break;
-                case UP:
-                    workingTetromino.rotate(board);
-                    repaintCanvas();
-                    break;
-            }
         });
 
         timer = new AnimationTimer() {
             @Override
             public void handle(long now) {
+
+//                while (workingTetromino.canMoveDown(board)) {
+//                    time += 500;
+//                    if (time >= 750000000) {
+//                        workingTetromino.moveDown();
+//                        repaintCanvas();
+//                        time = 0;
+//                    }
+//                }
+
                 while (workingTetromino.canMoveDown(board)) {
                     time += 500;
                     if (time >= 750000000) {
@@ -115,9 +126,11 @@ class Tetris {
                         time = 0;
                     }
                 }
+
                 if (!endTurn()) {
                     return;
                 }
+
                 startTurn();
             }
         };
@@ -125,7 +138,7 @@ class Tetris {
         board = new Board(22, 10);
         startTurn();
 
-        root.getChildren().addAll(canvas, nextCanvas, solverButton, resetButton);
+        root.getChildren().addAll(settingsPane, canvas, nextCanvas, solveButton, solve, resetButton, reset);
 
         return root;
     }
@@ -142,11 +155,11 @@ class Tetris {
             for (int c = 0; c < board.columns; c++) {
                 if (board.cells[r][c] != 0) {
                     context.setFill(Paint.valueOf(intToRGB(board.cells[r][c])));
-                    context.fillRect(20 * (c),
-                            20 * ((r) - 2), 20, 20);
-                    context.setFill(Paint.valueOf(intToRGB(0xFFFFFF)));
+                    context.fillRoundRect(20 * (c),
+                            20 * (r - 2), 20, 20, 10, 10);
+                    context.setStroke(Paint.valueOf(intToRGB(0xe2eff0)));
                     context.strokeRect(20 * (c),
-                            20 * ((r) - 2), 20, 20);
+                            20 * (r - 2), 20, 20);
                 }
             }
         }
@@ -164,8 +177,9 @@ class Tetris {
             for (int c = 0; c < next.size; c++) {
                 if (next.cells[r][c] != 0) {
                     nextContext.setFill(Paint.valueOf(intToRGB(next.cells[r][c])));
-                    nextContext.fillRect( xOffSet + 20 * c, yOffSet + 20 * r, 20, 20);
-                    nextContext.setFill(Paint.valueOf(intToRGB(0xFFFFFF)));
+                    nextContext.fillRoundRect(xOffSet + 20 * c, yOffSet + 20 * r, 20, 20, 10, 10);
+                    //nextContext.strokeStyle(Paint.valueOf(intToRGB(0xe2eff0)));
+                    nextContext.setStroke(Color.web("#ffffff"));
                     nextContext.strokeRect(xOffSet + 20 * c, yOffSet + 20 * r, 20, 20);
                 }
             }
@@ -185,11 +199,7 @@ class Tetris {
         repaintNextCanvas();
 
         if (isSolverActive) {
-            isKeyEnabled = false;
             workingTetromino = solver.best(board, workingTetrominos);
-            startWorkingPieceDropAnimation();
-        } else {
-            isKeyEnabled = true;
         }
     }
 
@@ -200,7 +210,8 @@ class Tetris {
 
     private boolean endTurn() {
         board.addTetromino(workingTetromino);
-        score += board.clearLines();
+        repaintCanvas();
+        board.clearLines();
         repaintCanvas();
         repaintNextCanvas();
 

@@ -11,7 +11,7 @@ public class Main extends Application {
         primaryStage.setTitle("TetrisGame");
         primaryStage.setResizable(false);
 
-        Tetris tetris = new Tetris();
+        Tetris tetris = new Tetris(2);
         Scene scene = new Scene(tetris.createContent());
 
         primaryStage.setScene(scene);
